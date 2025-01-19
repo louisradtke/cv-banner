@@ -69,36 +69,19 @@ class ConvexPolygon(Area):
         self.filt_margin = filt_margin
         self.points = np.array(points)
 
-        self.hesse_eqs = list()
-
-        rot_mat = np.array([[0., -1.], [1., 0.]])
-        l = self.points.shape[0]
-        for p_index in range(l):
-            p1 = self.points[p_index - 1,:]
-            p2 = self.points[p_index % l,:]
-
-            # see https://de.wikipedia.org/wiki/Hessesche_Normalform
-            v = np.reshape(p2 - p1, (2, 1))
-            n = np.matmul(rot_mat, v)
-            d = p1.dot(n)
-            n = n / np.linalg.norm(n)
-            inv = False
-            if d < 0:
-                n *= -1
-                inv = True
-            d = p1.dot(n)
-
-            self.hesse_eqs.append((n, d, inv))
-
     def contains_point(self, point: tuple[float, float] | np.ndarray) -> bool:
         if isinstance(point, np.ndarray):
             point = point.reshape((1, 2))
         else:
             point = np.array(point).reshape((1, 2))
 
-        # if any point lies behind a plane, it is on the outside of the polygon
-        for n, d, inv in self.hesse_eqs:
-            if (np.dot(point, n) < d + self.filt_margin) ^ inv:
+        for p_index in range(self.points.shape[0]):
+            p1 = self.points[p_index - 1]
+            p2 = self.points[p_index % self.points.shape[0]]
+            v1 = np.reshape(p2 - p1, (1, 2))
+            v2 = point - p1
+            cross_product = v1[0, 0] * v2[0, 1] - v1[0, 1] * v2[0, 0]
+            if cross_product < 0:
                 return False
 
         return True
