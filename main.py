@@ -14,7 +14,7 @@ from scipy.spatial import Delaunay, KDTree
 
 from areas import Area, Circle, gen_octaeda, ConvexPolygon
 
-mpl.use('TkAgg')
+# mpl.use('TkAgg')
 
 
 TL_CODE = '#ffc99c'
@@ -153,7 +153,7 @@ def main():
 
     n_filtered = 0
     for area in areas:
-        print(f'filtering for area {area.name}')
+        print(f'filtering points for area {area.name}')
 
         for point_index in range(len(pts), 0, -1) :
             point = pts[point_index-1]
@@ -180,10 +180,10 @@ def main():
             continue
         if i >= len(static_points):
             rm_index_set.add(i - len(static_points))
-            continue
+            # continue
         if j >= len(static_points):
             rm_index_set.add(j - len(static_points))
-            continue
+            # continue
 
     # remove all points having too close neighbours
     rm_indices = list(rm_index_set)
@@ -191,27 +191,58 @@ def main():
     for i in rm_indices:
         pts.pop(i)
 
-    pts += static_points
+    pts = static_points + pts
     pt_arr = np.array(pts)
 
     # triangulate points
     tri = Delaunay(pt_arr)
 
-    # filter the skipped circle    
+    # filter the skipped circle
     simplices = list(tri.simplices)
+    n_points_touching_polygons = 0
+    n_edges_crossing_polygons = 0
     for area in areas:
+        print(f'filtering simplices for area {area.name}')
         for i_simplex in range(len(simplices), 0, -1):
             simplex = simplices[i_simplex-1]
-            keep = False
-            for i_point in range(3):
-                if not area.contains_point(pt_arr[simplex[i_point]]):
-                    keep = True
-                    break
+            keep = True
 
-            if keep:
+            n_outside_edges = 0
+            for i in range(3):
+                si1 = i
+                si2 = (i + 1) % 3
+                p1 = pt_arr[simplex[si1]]
+                p2 = pt_arr[simplex[si2]]
+
+                # check if simplex corner lies on polygon edge. should not be true, but catches
+                # edge case of a point being spawned very close to polygon. should not be the case
+                # if margin of area was initialized properly
+                if area.contains_point_with_margin(p1, 1e-7):
+                    n_points_touching_polygons += 1
+                    keep = False
+
+                # check if simplex edge lies completely outside or on edge of polygon
+                center = (p1 + p2) / 2
+                if not area.contains_point_with_margin(center, -1e-7):
+                    n_outside_edges += 1
+                else:
+                    n_edges_crossing_polygons += 1
+
+            if keep or n_outside_edges == 3:
                 continue
 
             simplices.pop(i_simplex-1)
+
+            # plt.plot([t[0] for t in static_points], [t[1] for t in static_points], 'x')
+            # plt.plot([t[0] for t in rect1.points] + [rect1.points[0][0]],
+            #          [t[1] for t in rect1.points] + [rect1.points[0][1]])
+            # plt.plot([pt_arr[simplex[i]][0] for i in range(3)] + [pt_arr[simplex[0]][0]],
+            #          [pt_arr[simplex[i]][1] for i in range(3)] + [pt_arr[simplex[0]][1]])
+            # plt.show()
+            # pass
+
+    print(f'n_points_touching_polygons: {n_points_touching_polygons}')
+    print(f'n_edges_crossing_polygons: {n_edges_crossing_polygons}')
 
     # plt.plot([t[0] for t in static_points], [t[1] for t in static_points], 'x')
     # plt.plot([t[0] for t in rect1.points], [t[1] for t in rect1.points])
