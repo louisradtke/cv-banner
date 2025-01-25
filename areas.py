@@ -15,10 +15,25 @@ class Area(abc.ABC):
 
         :param point: The coordinates of the point to check, specified as a tuple
             of floats (x, y) or an ndarray.
-        :return: Whether the specified point is within the area, considering the
-            allowable rect.
+        :return: Whether the specified point is within the area.
         """
         pass
+
+    @abc.abstractmethod
+    def contains_point_with_margin(self, point: tuple[float, float] | np.ndarray, filt_margin: float) -> bool:
+        """
+        Determines whether a given point is located within the area defined by the
+        respective class, overwriting the default margin, if defined by the subclass.
+
+        :param point: The coordinates of the point to check, specified as a tuple
+            of floats (x, y) or an ndarray.
+        :param filt_margin: The margin of error to allow when determining if
+            the point lies within the geometric bounds. Positive is outside, can
+            be negative.
+        :return: Whether the specified point is within the area, considering the provided margin.
+        """
+        pass
+
 
     @property
     def name(self) -> str:
@@ -38,9 +53,12 @@ class Circle(Area):
         self.filt_margin = filt_margin
 
     def contains_point(self, point: tuple[float, float] | np.ndarray) -> bool:
+        return self.contains_point_with_margin(point, self.filt_margin)
+
+    def contains_point_with_margin(self, point: tuple[float, float] | np.ndarray, filt_margin: float) -> bool:
         if isinstance(point, np.ndarray):
             point = point.tolist()
-        return (point[0] - self.center_x)**2 + (point[1] - self.center_y)**2 < (self.radius + self.filt_margin)**2
+        return (point[0] - self.center_x)**2 + (point[1] - self.center_y)**2 < (self.radius + filt_margin)**2
 
     def gen_points(self, n_points: int) -> list[tuple[float, float]]:
         point_list = list()
@@ -70,17 +88,22 @@ class ConvexPolygon(Area):
         self.points = np.array(points)
 
     def contains_point(self, point: tuple[float, float] | np.ndarray) -> bool:
-        if isinstance(point, np.ndarray):
-            point = point.reshape((1, 2))
-        else:
-            point = np.array(point).reshape((1, 2))
+        return self.contains_point_with_margin(point, self.filt_margin)
 
+    def contains_point_with_margin(self, point: tuple[float, float] | np.ndarray, filt_margin: float) -> bool:
+        if isinstance(point, np.ndarray):
+            point = point.reshape((2, 1))
+        else:
+            point = np.array(point).reshape((2, 1))
+
+        rot_mat = np.array([[0., 1.], [-1., 0.]])  # rotate right, to outside
         for p_index in range(self.points.shape[0]):
-            p1 = self.points[p_index - 1]
-            p2 = self.points[p_index % self.points.shape[0]]
-            v1 = np.reshape(p2 - p1, (1, 2))
-            v2 = point - p1
-            cross_product = v1[0, 0] * v2[0, 1] - v1[0, 1] * v2[0, 0]
+            p1 = np.reshape(self.points[p_index - 1], (2, 1))
+            p2 = np.reshape(self.points[p_index % self.points.shape[0]], (2, 1))
+            v1 = np.reshape(p2 - p1, (2, 1))
+            n1 = rot_mat @ v1 / np.linalg.norm(v1) * filt_margin
+            v2 = point - (p1 + n1)
+            cross_product = v1[0, 0] * v2[1, 0] - v1[1, 0] * v2[0, 0]
             if cross_product < 0:
                 return False
 
