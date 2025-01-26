@@ -18,10 +18,8 @@ from areas import Area, Circle, gen_octaeda, ConvexPolygon
 
 
 TL_CODE = '#ffc99c'
-# TR_CODE = '#fc923a'
 TR_CODE = '#ff831c'
 BL_CODE = '#89bafa'
-# BL_CODE = '#94e2ff'
 BR_CODE = '#2f6dbd'
 A4_W_CM = 21.0
 A4_H_CM = 29.7
