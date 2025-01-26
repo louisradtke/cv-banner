@@ -132,15 +132,15 @@ def create_svg(
 
 def main():
     w = (A4_W_CM - 2 * 0.3) * 0.3
-    h = A4_H_CM - 2 * 0.3
+    h = A4_H_CM - 2 * 0.3 - 0.25
     cen_x = w / 2
     circ_y = 4.5
     circ_r = 2.5
     rect_margin = 0.25
-    rect1_h = 0.5
-    rect1_y = circ_y + circ_r + rect1_h + 1
+    rect1_h = 2.2
+    rect1_y = circ_y + circ_r + rect1_h / 2 + rect_margin + 0.75
     rect1_w = 2 * (circ_r - rect_margin)
-    rect2_y = A4_H_CM - 2.
+    rect2_y = A4_H_CM - 3. + rect_margin
     rect2_w = 2 * (circ_r - rect_margin)
     rect2_h = 1.5
     min_dist = 1.5
