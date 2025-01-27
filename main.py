@@ -135,7 +135,7 @@ def main():
     circ_y = 4.5
     circ_r = 2.5
     rect_margin = 0.25
-    rect1_h = 2.2
+    rect1_h = 2.85
     rect1_y = circ_y + circ_r + rect1_h / 2 + rect_margin + 0.75
     rect1_w = 2 * (circ_r - rect_margin)
     rect2_y = A4_H_CM - 3. + rect_margin
